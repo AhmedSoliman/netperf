@@ -1,0 +1,31 @@
+[package]
+name = "netperf"
+version = "0.1.0"
+description = "A network performance measurement tool"
+authors = ["Ahmed Soliman <me@ahmedsoliman.com>"]
+edition = "2018"
+repository = "https://github.com/AhmedSoliman/netperf"
+license = "MIT OR Apache-2.0"
+keywords = ["network", "performance", "iperf3"]
+categories = ["command-line-utilities", "simulation"]
+readme = "README.md"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+structopt = "0.3"
+log = "0.4"
+env_logger = "0.7"
+anyhow = "1.0"
+nix = "0.17"
+tokio = { version = "0.2", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+clap-verbosity-flag = "0.3"
+async-std = "1.5"
+bytes = "0.5"
+thiserror = "1.0"
+uuid = { version = "0.8", features = ["v4"] }
+futures = "0.3"
+
+[dev-dependencies]
+pretty_assertions = "0.6"
