@@ -1,5 +1,6 @@
 # netperf
 ![](https://github.com/AhmedSoliman/netperf/workflows/Continuous%20Integration/badge.svg)
+![https://crates.io/crates/netperf](https://img.shields.io/crates/v/netperf.svg)
 
 A network (TCP-only) performance measurement tool written in Rust. Designed after iperf3's
 original code.
