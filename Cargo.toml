@@ -1,6 +1,6 @@
 [package]
 name = "netperf"
-version = "0.1.0"
+version = "0.1.1"
 description = "A network performance measurement tool"
 authors = ["Ahmed Soliman <me@ahmedsoliman.com>"]
 edition = "2018"
