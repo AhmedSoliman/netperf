@@ -2,6 +2,8 @@ use crate::common::consts;
 use crate::common::control::*;
 use crate::common::data::{Role, TestParameters};
 use crate::common::net_utils::*;
+use crate::common::opts::Opts;
+use crate::common::perf_test::PerfTest;
 use crate::common::*;
 use crate::controller::{ControllerMessage, TestController};
 use anyhow::{anyhow, Context, Result};

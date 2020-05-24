@@ -1,4 +1,4 @@
-use crate::common::Opts;
+use crate::common::opts::Opts;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Eq, PartialEq)]
@@ -31,9 +31,15 @@ pub struct TestParameters {
 
 impl TestParameters {
     pub fn from_opts(opts: &Opts, default_block_size: usize) -> Self {
+        let direction = if opts.client_opts.bidir {
+            Direction::Bidirectional
+        } else if opts.client_opts.reverse {
+            Direction::ServerToClient
+        } else {
+            Direction::ClientToServer
+        };
         TestParameters {
-            // TODO: Make this configurable through opts
-            direction: Direction::ClientToServer,
+            direction,
             omit_seconds: 0,
             time_seconds: opts.client_opts.time,
             parallel: opts.client_opts.parallel,

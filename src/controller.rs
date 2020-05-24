@@ -1,6 +1,6 @@
 use crate::common::consts::INTERNAL_PROT_BUFFER;
-use crate::common::control::*;
-use crate::common::data::Role;
+use crate::common::control::{ClientMessage, ServerMessage, State, StreamStats, TestResults};
+use crate::common::data::{Direction, Role};
 use crate::common::net_utils::*;
 use crate::common::perf_test::PerfTest;
 use crate::common::stream_worker::{StreamWorker, StreamWorkerRef, WorkerMessage};
@@ -277,7 +277,21 @@ impl TestController {
         // The first (num_send_streams) are sending (meaning that we `Client` are the sending
         // end of this stream)
         let streams_created = self.test.streams.len();
-        let is_sending = streams_created < self.test.num_send_streams as usize;
+        let mut is_sending = streams_created < self.test.num_send_streams as usize;
+        // The case for bidirectional is not that straight forward.
+        // This is the only case where we have both sending and receiving streams, in this scenario
+        // we need to flip the flag on the server. To explain:
+        //
+        // Client creates 1 sending, 1 recieving streams. The client will connect them in that order.
+        // The server need to first accept the first one, in this case we want to accept it as
+        // receiving.
+        // As we exhaust the receiving, we will create the sending streams.
+        // Hence this flip trick!
+        if self.test.role == Role::Server && self.test.params.direction == Direction::Bidirectional
+        {
+            // Flip!
+            is_sending = !is_sending;
+        }
         let id = streams_created;
         let controller = self.sender.clone();
         let (sender, receiver) = mpsc::channel(INTERNAL_PROT_BUFFER);

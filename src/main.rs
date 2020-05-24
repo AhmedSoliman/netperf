@@ -1,6 +1,6 @@
 use anyhow::Result;
 use log::info;
-use netperf::common::Opts;
+use netperf::common::opts::Opts;
 use structopt::StructOpt;
 
 #[tokio::main]

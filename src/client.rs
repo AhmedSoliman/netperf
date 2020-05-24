@@ -1,8 +1,9 @@
 use crate::common::consts::DEFAULT_BLOCK_SIZE;
-use crate::common::control::*;
+use crate::common::control::{ClientMessage, ServerMessage};
 use crate::common::data::{Role, TestParameters};
 use crate::common::net_utils::*;
-use crate::common::*;
+use crate::common::opts::Opts;
+use crate::common::perf_test::PerfTest;
 use crate::controller::TestController;
 use anyhow::Result;
 use log::debug;
