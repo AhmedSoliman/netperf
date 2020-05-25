@@ -1,4 +1,5 @@
 use crate::common::control::TestResults;
+use crate::common::data::Direction;
 
 // Bytes
 const KBYTES: usize = 1024;
@@ -74,7 +75,11 @@ pub fn print_stats(
     );
 }
 
-pub fn print_summary(local_results: &TestResults, remote_results: &TestResults) {
+pub fn print_summary(
+    local_results: &TestResults,
+    remote_results: &TestResults,
+    direction: &Direction,
+) {
     println!("- - - - - - - - - - - - - - - - - - - - - - - - - - - - -");
     print_summary_header();
     // Streams IDs match between server and client (they make pairs of sender/receiver)
@@ -100,23 +105,27 @@ pub fn print_summary(local_results: &TestResults, remote_results: &TestResults) 
             receiver_duration_millis =
                 std::cmp::max(receiver_duration_millis, local_stats.duration_millis);
         }
-        // find the remote counterpart.
-        if let Some(remote_stats) = remote_results.streams.get(id) {
-            print_stats(
-                Some(*id),
-                0,
-                remote_stats.duration_millis,
-                remote_stats.bytes_transferred,
-                remote_stats.sender,
-            );
-            if remote_stats.sender {
-                sender_bytes_transferred += remote_stats.bytes_transferred;
-                sender_duration_millis =
-                    std::cmp::max(sender_duration_millis, remote_stats.duration_millis);
-            } else {
-                receiver_bytes_transferred += remote_stats.bytes_transferred;
-                receiver_duration_millis =
-                    std::cmp::max(receiver_duration_millis, remote_stats.duration_millis);
+        // find the remote counterpart. This is only valuable if we are not using
+        // bidirectional streams. In bidirectional streams we already have the sender
+        // and receiving data.
+        if *direction != Direction::Bidirectional {
+            if let Some(remote_stats) = remote_results.streams.get(id) {
+                print_stats(
+                    Some(*id),
+                    0,
+                    remote_stats.duration_millis,
+                    remote_stats.bytes_transferred,
+                    remote_stats.sender,
+                );
+                if remote_stats.sender {
+                    sender_bytes_transferred += remote_stats.bytes_transferred;
+                    sender_duration_millis =
+                        std::cmp::max(sender_duration_millis, remote_stats.duration_millis);
+                } else {
+                    receiver_bytes_transferred += remote_stats.bytes_transferred;
+                    receiver_duration_millis =
+                        std::cmp::max(receiver_duration_millis, remote_stats.duration_millis);
+                }
             }
         }
     }

@@ -76,14 +76,13 @@ impl TestController {
                     debug!("Streams have been created, starting the load test");
                     // Send the StartLoad signal to all streams.
                     ui::print_header();
-                    self.broadcast_to_streams(WorkerMessage::StartLoad)
-                        .expect("Internal communication error!");
+                    self.broadcast_to_streams(WorkerMessage::StartLoad);
                 }
                 // We are asked to exchange the test results we have.
                 State::ExchangeResults => {
                     // Do we have active streams yet? We should ask these to terminate and wait
-                    self.broadcast_to_streams(WorkerMessage::Terminate)
-                        .expect("Internal communication error!");
+                    // This is best-effort.
+                    self.broadcast_to_streams(WorkerMessage::Terminate);
                     let local_results = self.collect_test_result().await?;
                     let remote_results = self
                         .exchange_results(local_results.clone())
@@ -121,9 +120,7 @@ impl TestController {
     }
 
     fn print_results(&self, local: TestResults, remote: TestResults) {
-        ui::print_summary(&local, &remote);
-        // println!("Local Results: {:?}", local);
-        // println!("Remote Results: {:?}", remote);
+        ui::print_summary(&local, &remote, &self.test.params.direction);
     }
 
     async fn collect_test_result(&mut self) -> Result<TestResults> {
@@ -189,11 +186,18 @@ impl TestController {
         }
     }
 
-    fn broadcast_to_streams(&mut self, message: WorkerMessage) -> Result<()> {
-        for worker_ref in self.test.streams.values_mut() {
-            worker_ref.channel.try_send(message.clone())?;
+    fn broadcast_to_streams(&mut self, message: WorkerMessage) {
+        for (id, worker_ref) in &mut self.test.streams {
+            worker_ref
+                .channel
+                .try_send(message.clone())
+                .unwrap_or_else(|e| {
+                    debug!(
+                        "Failed to terminate stream {}, it might have been terminated already: {}",
+                        id, e
+                    )
+                });
         }
-        Ok(())
     }
 
     /// A handler when we receive a ControllerMessage from other components.
