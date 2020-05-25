@@ -27,6 +27,7 @@ pub struct TestParameters {
     pub parallel: u16,
     pub block_size: usize,
     pub client_version: String,
+    pub no_delay: bool,
 }
 
 impl TestParameters {
@@ -45,6 +46,7 @@ impl TestParameters {
             parallel: opts.client_opts.parallel,
             block_size: opts.client_opts.length.unwrap_or(default_block_size),
             client_version: env!("CARGO_PKG_VERSION").to_string(),
+            no_delay: opts.client_opts.no_delay,
         }
     }
 }

@@ -1,4 +1,5 @@
 # netperf
+![](https://img.shields.io/crates/l/netperf)
 ![](https://github.com/AhmedSoliman/netperf/workflows/Continuous%20Integration/badge.svg)
 ![https://crates.io/crates/netperf](https://img.shields.io/crates/v/netperf.svg)
 

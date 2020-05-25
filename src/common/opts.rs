@@ -30,6 +30,9 @@ pub struct ClientOpts {
     /// Run in reverse mode (server sends, client receives)
     #[structopt(short = "-R", long, group = "direction")]
     pub reverse: bool,
+    /// Set TCP no delay, disabling Nagle's Algorithm
+    #[structopt(short = "-N", long)]
+    pub no_delay: bool,
 }
 
 #[derive(Debug, StructOpt)]

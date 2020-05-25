@@ -76,7 +76,10 @@ pub async fn run_server(opts: Opts) -> Result<()> {
                         let controller = TestController::new(test);
                         controller_channel = Some(controller.sender.clone());
                         tokio::spawn(async move {
-                            let _ = controller.run_controller().await;
+                            if let Err(e) = controller.run_controller().await {
+                                debug!("Controller aborted: {}", e);
+                                println!("Test aborted!");
+                            }
                         });
                     }
                     Err(e) => {

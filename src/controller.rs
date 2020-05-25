@@ -84,10 +84,7 @@ impl TestController {
                     // This is best-effort.
                     self.broadcast_to_streams(WorkerMessage::Terminate);
                     let local_results = self.collect_test_result().await?;
-                    let remote_results = self
-                        .exchange_results(local_results.clone())
-                        .await
-                        .expect("Failed to exchange results with the server");
+                    let remote_results = self.exchange_results(local_results.clone()).await?;
                     self.print_results(local_results, remote_results);
                     break;
                 }
@@ -309,11 +306,10 @@ impl TestController {
         );
         let mut controller = self.sender.clone();
         let handle = tokio::spawn(async move {
-            // Do something here...
             let result = worker.run_worker().await;
             controller
                 .try_send(ControllerMessage::StreamTerminated(id))
-                .expect("Failed to communicate with controller!");
+                .unwrap_or_else(|e| debug!("Failed to communicate with controller: {}", e));
             result
         });
         let worker_ref = StreamWorkerRef {

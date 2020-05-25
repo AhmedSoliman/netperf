@@ -127,6 +127,10 @@ impl StreamWorker {
             remaining_bytes -= bytes_count;
             if bytes_count > 0 {
                 self.packets += 1;
+            } else {
+                // zero means that the connection is terminated. Let's wrap this up.
+                debug!("Stream {}'s connection has been closed.", self.id);
+                break;
             }
             // Stats
             // Check if we should print stats or not.
@@ -164,6 +168,9 @@ impl StreamWorker {
     }
 
     fn configure_stream_socket(&mut self) -> Result<()> {
+        if self.params.no_delay {
+            self.stream.set_nodelay(self.params.no_delay)?;
+        }
         // TODO
         // debug!(
         //     "Stream [{}] Setting socket send/recv buffer to {} bytes",
