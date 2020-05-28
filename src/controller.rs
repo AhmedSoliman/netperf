@@ -5,7 +5,7 @@ use crate::common::net_utils::*;
 use crate::common::perf_test::PerfTest;
 use crate::common::stream_worker::{StreamWorker, StreamWorkerRef, WorkerMessage};
 use crate::common::ui;
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use futures::stream::StreamExt;
 use log::{debug, warn};
 use std::collections::HashMap;
@@ -94,20 +94,15 @@ impl TestController {
             old_state = state;
             if self.test.role == Role::Server {
                 // We are a SERVER
-                let internal_message = self.receiver.next();
-                let client_message = server_read_message(&mut self.test.control_socket);
-                select! {
-                    message = internal_message => self.process_internal_message(message).await ,
-                    message = client_message => self.process_client_message(message?).await,
-                    else => break,
-                }
+                let message = self.receiver.next().await;
+                self.process_internal_message(message).await?;
             } else {
                 // We are a CLIENT
                 let internal_message = self.receiver.next();
                 let server_message = client_read_message(&mut self.test.control_socket);
                 select! {
-                    message = internal_message => self.process_internal_message(message).await ,
-                    message = server_message => self.process_server_message(message?).await,
+                    message = internal_message => self.process_internal_message(message).await? ,
+                    message = server_message => self.process_server_message(message).await?,
                     else => break,
                 }
             }
@@ -198,17 +193,20 @@ impl TestController {
     }
 
     /// A handler when we receive a ControllerMessage from other components.
-    async fn process_internal_message(&mut self, message: Option<ControllerMessage>) {
+    async fn process_internal_message(
+        &mut self,
+        message: Option<ControllerMessage>,
+    ) -> Result<(), anyhow::Error> {
         let message = message.unwrap();
         match message {
-            ControllerMessage::CreateStream(stream) => self.accept_stream(stream).await.unwrap(),
+            ControllerMessage::CreateStream(stream) => self.accept_stream(stream).await?,
             ControllerMessage::StreamTerminated(id) => {
                 let handle = self.test.streams.remove(&id);
                 if let Some(worker_ref) = handle {
                     // join the task to retrieve the result.
-                    let result = worker_ref.join_handle.await.unwrap_or_else(|_| {
-                        panic!(format!("Couldn't join an internal task for stream: {}", id))
-                    });
+                    let result = worker_ref.join_handle.await.with_context(|| {
+                        format!("Couldn't join an internal task for stream: {}", id)
+                    })?;
                     if let Ok(result) = result {
                         self.stream_results.insert(id, result);
                     } else {
@@ -225,20 +223,24 @@ impl TestController {
                 }
             }
         }
+        Ok(())
     }
 
-    async fn process_server_message(&mut self, message: ServerMessage) {
+    async fn process_server_message(
+        &mut self,
+        message: Result<ServerMessage, anyhow::Error>,
+    ) -> Result<(), anyhow::Error> {
+        let message = message.with_context(|| "Server terminated!")?;
         match message {
             ServerMessage::SetState(state) => {
                 // Update our client state, ignore/panic the error on purpose. The error should
                 // never happen on the client side.
-                self.test.set_state(state).await.unwrap();
+                self.test.set_state(state).await?;
             }
             e => println!("Received an unexpected message from the server {:?}", e),
         }
+        Ok(())
     }
-
-    async fn process_client_message(&mut self, _message: ClientMessage) {}
 
     // Executed only on the server
     async fn accept_stream(&mut self, stream: TcpStream) -> Result<()> {
@@ -294,16 +296,8 @@ impl TestController {
             is_sending = !is_sending;
         }
         let id = streams_created;
-        let controller = self.sender.clone();
         let (sender, receiver) = mpsc::channel(INTERNAL_PROT_BUFFER);
-        let worker = StreamWorker::new(
-            id,
-            stream,
-            self.test.params.clone(),
-            is_sending,
-            receiver,
-            controller,
-        );
+        let worker = StreamWorker::new(id, stream, self.test.params.clone(), is_sending, receiver);
         let mut controller = self.sender.clone();
         let handle = tokio::spawn(async move {
             let result = worker.run_worker().await;

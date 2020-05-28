@@ -28,6 +28,7 @@ pub struct TestParameters {
     pub block_size: usize,
     pub client_version: String,
     pub no_delay: bool,
+    pub socket_buffers: Option<usize>,
 }
 
 impl TestParameters {
@@ -47,6 +48,7 @@ impl TestParameters {
             block_size: opts.client_opts.length.unwrap_or(default_block_size),
             client_version: env!("CARGO_PKG_VERSION").to_string(),
             no_delay: opts.client_opts.no_delay,
+            socket_buffers: opts.client_opts.socket_buffers,
         }
     }
 }

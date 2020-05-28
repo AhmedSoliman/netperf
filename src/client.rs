@@ -43,13 +43,8 @@ pub async fn run_client(opts: Opts) -> Result<(), anyhow::Error> {
 
     let perf_test = PerfTest::new(Some(address), cookie, control_socket, Role::Client, params);
     let controller = TestController::new(perf_test);
-    let handle = tokio::spawn(async move {
-        controller
-            .run_controller()
-            .await
-            .expect("Test terminated unexpectedly!");
-    });
+    let handle = tokio::spawn(async move { controller.run_controller().await });
     // Wait for the test to finish.
-    handle.await?;
+    handle.await??;
     Ok(())
 }

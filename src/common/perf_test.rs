@@ -2,7 +2,7 @@ use crate::common::control::{ServerMessage, State};
 use crate::common::data::*;
 use crate::common::net_utils::*;
 use crate::common::stream_worker::StreamWorkerRef;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
@@ -84,7 +84,8 @@ impl PerfTest {
                 &mut self.control_socket,
                 ServerMessage::SetState(state.clone()),
             )
-            .await?;
+            .await
+            .context("Cannot send the state to the client")?;
         }
         // We can perform state transition validation here if necessary.
         let mut locked_state = self.state.lock().await;

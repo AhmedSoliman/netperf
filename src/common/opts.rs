@@ -18,6 +18,9 @@ pub struct ClientOpts {
     /// Length of buffer to read or write, default is 2MiB (2097152)
     #[structopt(short, long)]
     pub length: Option<usize>,
+    /// SO_SNDBUF/SO_RECVBUF for the data streams, uses the system default if unset.
+    #[structopt(long)]
+    pub socket_buffers: Option<usize>,
     /// Time in seconds to transmit for
     #[structopt(short, long, default_value = "10")]
     pub time: u64,

@@ -14,7 +14,7 @@ const GBITS: usize = 1000 * MBITS;
 const TBITS: usize = 1000 * GBITS;
 
 pub fn print_header() {
-    println!("ID   Interval          Transfer      Bitrate");
+    println!("[ ID]   Interval          Transfer      Bitrate");
 }
 pub fn print_server_banner(port: u16) {
     println!("--------------------------------------");
@@ -61,17 +61,20 @@ pub fn print_stats(
     duration_millis: u64,
     bytes_transferred: usize,
     sender: bool,
+    _syscalls: usize,
+    _block_size: usize,
 ) {
     let end_point = offset_from_start_millis + duration_millis;
+    // Calculating the percentage of
     println!(
-        "[{}]   {:.2}..{:.2} sec  {}   {}        {}",
+        "[{:>3}]   {:.2}..{:.2} sec  {}   {}        {}",
         id.map(|x| x.to_string())
             .unwrap_or_else(|| "SUM".to_owned()),
         offset_from_start_millis as f64 / 1000f64,
         end_point as f64 / 1000f64,
         humanize_bytes(bytes_transferred),
         humanize_bitrate(bytes_transferred, duration_millis),
-        if sender { "sender" } else { "receiver" }
+        if sender { "sender" } else { "receiver" },
     );
 }
 
@@ -95,6 +98,8 @@ pub fn print_summary(
             local_stats.duration_millis,
             local_stats.bytes_transferred,
             local_stats.sender,
+            local_stats.syscalls,
+            0,
         );
         if local_stats.sender {
             sender_bytes_transferred += local_stats.bytes_transferred;
@@ -116,6 +121,8 @@ pub fn print_summary(
                     remote_stats.duration_millis,
                     remote_stats.bytes_transferred,
                     remote_stats.sender,
+                    remote_stats.syscalls,
+                    0,
                 );
                 if remote_stats.sender {
                     sender_bytes_transferred += remote_stats.bytes_transferred;
@@ -138,6 +145,8 @@ pub fn print_summary(
             sender_duration_millis,
             sender_bytes_transferred,
             true,
+            0,
+            0,
         );
         print_stats(
             None,
@@ -145,6 +154,8 @@ pub fn print_summary(
             receiver_duration_millis,
             receiver_bytes_transferred,
             false,
+            0,
+            0,
         );
     }
 }

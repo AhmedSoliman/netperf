@@ -25,6 +25,7 @@ pub struct StreamStats {
     pub sender: bool,
     pub duration_millis: u64,
     pub bytes_transferred: usize,
+    pub syscalls: usize,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]

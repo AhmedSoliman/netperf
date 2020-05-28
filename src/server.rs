@@ -19,7 +19,8 @@ pub async fn run_server(opts: Opts) -> Result<()> {
     // We use IPv6Addr::UNSPECIFIED here to listen on all
     // IPv4 and IPv6 local interfaces. (dual stack)
     let mut listener = TcpListener::bind((Ipv6Addr::UNSPECIFIED, opts.common_opts.port)).await?;
-    ui::print_server_banner(opts.common_opts.port);
+    let port = opts.common_opts.port;
+    ui::print_server_banner(port);
     // Handles a single test instance
     //
     // Note that in netperf, we don't run tests concurrently.
@@ -80,6 +81,7 @@ pub async fn run_server(opts: Opts) -> Result<()> {
                                 debug!("Controller aborted: {}", e);
                                 println!("Test aborted!");
                             }
+                            ui::print_server_banner(port);
                         });
                     }
                     Err(e) => {
