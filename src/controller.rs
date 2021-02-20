@@ -6,8 +6,7 @@ use crate::common::perf_test::PerfTest;
 use crate::common::stream_worker::{StreamWorker, StreamWorkerRef, WorkerMessage};
 use crate::common::ui;
 use anyhow::{anyhow, Context, Result};
-use futures::stream::StreamExt;
-use log::{debug, warn};
+use log::{debug, error, warn};
 use std::collections::HashMap;
 use tokio::net::TcpStream;
 use tokio::select;
@@ -94,11 +93,11 @@ impl TestController {
             old_state = state;
             if self.test.role == Role::Server {
                 // We are a SERVER
-                let message = self.receiver.next().await;
+                let message = self.receiver.recv().await;
                 self.process_internal_message(message).await?;
             } else {
                 // We are a CLIENT
-                let internal_message = self.receiver.next();
+                let internal_message = self.receiver.recv();
                 let server_message = client_read_message(&mut self.test.control_socket);
                 select! {
                     message = internal_message => self.process_internal_message(message).await? ,
@@ -179,12 +178,13 @@ impl TestController {
     }
 
     fn broadcast_to_streams(&mut self, message: WorkerMessage) {
+        debug!("Broadcasting to streams {:?}", message);
         for (id, worker_ref) in &mut self.test.streams {
             worker_ref
                 .channel
                 .try_send(message.clone())
                 .unwrap_or_else(|e| {
-                    debug!(
+                    error!(
                         "Failed to terminate stream {}, it might have been terminated already: {}",
                         id, e
                     )
@@ -247,7 +247,7 @@ impl TestController {
         assert_eq!(self.test.role, Role::Server);
         let total_needed_streams: usize =
             (self.test.num_send_streams + self.test.num_receive_streams) as usize;
-        self.create_and_register_stream_worker(stream)?;
+        self.create_and_register_stream_worker(stream);
         if self.test.streams.len() == total_needed_streams {
             // We have all streams ready, switch state and start load.
             self.test.set_state(State::Running).await?;
@@ -276,7 +276,7 @@ impl TestController {
         Ok(stream)
     }
 
-    fn create_and_register_stream_worker(&mut self, stream: TcpStream) -> Result<()> {
+    fn create_and_register_stream_worker(&mut self, stream: TcpStream) {
         // The first (num_send_streams) are sending (meaning that we `Client` are the sending
         // end of this stream)
         let streams_created = self.test.streams.len();
@@ -298,7 +298,7 @@ impl TestController {
         let id = streams_created;
         let (sender, receiver) = mpsc::channel(INTERNAL_PROT_BUFFER);
         let worker = StreamWorker::new(id, stream, self.test.params.clone(), is_sending, receiver);
-        let mut controller = self.sender.clone();
+        let controller = self.sender.clone();
         let handle = tokio::spawn(async move {
             let result = worker.run_worker().await;
             controller
@@ -311,7 +311,6 @@ impl TestController {
             join_handle: handle,
         };
         self.test.streams.insert(id, worker_ref);
-        Ok(())
     }
 
     /// Executed only on the client. Establishes N connections to the server according to the
@@ -326,7 +325,7 @@ impl TestController {
 
         while self.test.streams.len() < total_needed_streams {
             let stream = self.connect_data_stream().await?;
-            self.create_and_register_stream_worker(stream)?;
+            self.create_and_register_stream_worker(stream);
         }
         Ok(())
     }

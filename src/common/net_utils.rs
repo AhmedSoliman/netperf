@@ -1,7 +1,7 @@
 use crate::common::consts::{MAX_CONTROL_MESSAGE, MESSAGE_LENGTH_SIZE_BYTES};
 use crate::common::control::*;
 use anyhow::{bail, Context, Result};
-use bytes::{Buf, BufMut, BytesMut};
+use bytes::{BufMut, BytesMut};
 use log::debug;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -72,8 +72,8 @@ where
     // Shipping the length first.
     buf.put_u32(payload.len() as u32);
     buf.put_slice(payload);
-    debug!("Sent: {} bytes", buf.bytes().len());
-    stream.write_all(&buf.bytes()).await?;
+    debug!("Sent: {} bytes", &buf[..].len());
+    stream.write_all(&buf[..]).await?;
     Ok(())
 }
 
@@ -139,7 +139,6 @@ pub fn peer_to_string(stream: &TcpStream) -> String {
 mod tests {
     use super::*;
     use crate::common::control::to_server_error;
-    use bytes::Bytes;
     use pretty_assertions::assert_eq;
     use serde::{Deserialize, Serialize};
 
@@ -147,13 +146,6 @@ mod tests {
     #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
     struct MockSerializable {
         username: String,
-    }
-
-    // Note the lifetime of the returned stream matches the input buffer
-    fn convert_buffer_to_stream<'a>(buf: &'a Bytes) -> impl tokio::io::AsyncRead + 'a {
-        // Creating a stream of 5-byte chunks to be read later.
-        let chunks_stream = tokio::stream::iter(buf.chunks(5).map(|x| Ok(x)));
-        tokio::io::stream_reader(chunks_stream)
     }
 
     #[tokio::test]
@@ -166,9 +158,7 @@ mod tests {
         send_control_message(&mut buf, obj.clone()).await?;
         assert_eq!(buf.len(), 24);
         // let's receive the same value and compare.
-        let mem = Bytes::from(buf);
-        let mut stream = convert_buffer_to_stream(&mem);
-        let data: MockSerializable = read_control_message(&mut stream).await?;
+        let data: MockSerializable = read_control_message(&mut &buf[..]).await?;
         assert_eq!(data, obj);
         Ok(())
     }
@@ -180,9 +170,7 @@ mod tests {
             let mut buf = vec![];
             server_send_message(&mut buf, ServerMessage::Welcome).await?;
             // let's receive the same value and compare.
-            let mem = Bytes::from(buf);
-            let mut stream = convert_buffer_to_stream(&mem);
-            let data = client_read_message(&mut stream).await?;
+            let data = client_read_message(&mut &buf[..]).await?;
             assert_eq!(data, ServerMessage::Welcome);
         }
         // Send and receive errors
@@ -194,9 +182,7 @@ mod tests {
             )
             .await?;
             // let's receive the same value and compare.
-            let mem = Bytes::from(buf);
-            let mut stream = convert_buffer_to_stream(&mem);
-            let data = client_read_message(&mut stream).await;
+            let data = client_read_message(&mut &buf[..]).await;
             assert!(data.is_err());
             assert!(matches!(to_server_error(&data),
                 Some(ServerError::AccessDenied(msg)) if *msg == "Something went wrong"

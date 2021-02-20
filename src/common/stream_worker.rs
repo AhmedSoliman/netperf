@@ -9,10 +9,11 @@ use std::time::Duration;
 use tokio::fs::File;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
-use tokio::stream::StreamExt;
-use tokio::sync::mpsc::{error::TryRecvError, Receiver, Sender};
+use tokio::sync::mpsc::{Receiver, Sender};
+// use tokio_stream::StreamExt;
+// use tokio::sync::mpsc::{error::TryRecvError, Receiver, Sender};
 use tokio::task::JoinHandle;
-use tokio::time::{delay_for, timeout, Instant};
+use tokio::time::{timeout, Instant};
 
 #[derive(Debug, Clone)]
 pub enum WorkerMessage {
@@ -76,14 +77,14 @@ impl StreamWorker {
                 "receiving"
             }
         );
-        let signal = self.receiver.next().await;
+        let signal = self.receiver.recv().await;
         if !matches!(signal, Some(WorkerMessage::StartLoad)) {
             bail!("Internal communication channel for stream was terminated unexpectedly!");
         }
         // TODO: Connect to the cmdline args.
         let interval = Duration::from_secs(1);
         let start_time = Instant::now();
-        let timeout_timer = delay_for(Duration::from_secs(self.params.time_seconds));
+        let timeout_duration = Duration::from_secs(self.params.time_seconds);
         let mut bytes_transferred: usize = 0;
         let mut syscalls: usize = 0;
         let mut current_interval_start = Instant::now();
@@ -91,22 +92,21 @@ impl StreamWorker {
         let mut current_interval_syscalls: usize = 0;
         loop {
             // Are we done?
-            if timeout_timer.is_elapsed() {
+            if start_time.elapsed() > timeout_duration {
                 debug!("Test time is up!");
                 break;
             }
-            let internal_message = self.receiver.try_recv();
+            let internal_message = self.receiver.recv().now_or_never().flatten();
             match internal_message {
-                Ok(WorkerMessage::StartLoad) => {
+                Some(WorkerMessage::StartLoad) => {
                     warn!(
                         "Unexpected StartLoad from controller, we are already running with load!"
                     );
                 }
-                Ok(WorkerMessage::Terminate) => {
+                Some(WorkerMessage::Terminate) => {
                     break;
                 }
-                Err(TryRecvError::Empty) => {}
-                Err(TryRecvError::Closed) => {}
+                None => {}
             };
 
             // We don't want to be waiting for data forever, if we don't have data, after the
@@ -179,8 +179,29 @@ impl StreamWorker {
         }
         // Configure the control socket to use the send and receive buffers.
         if let Some(socket_buffers) = self.params.socket_buffers {
-            self.stream.set_send_buffer_size(socket_buffers)?;
-            self.stream.set_recv_buffer_size(socket_buffers)?;
+            let socket_buffers = socket_buffers.try_into().unwrap_or(u32::MAX);
+            debug!("Setting socket buffers to '{}'", socket_buffers);
+            // A hack since tokio 1 doesn't support set_send/recv buffers on TcpStream
+            #[cfg(any(unix, windows))]
+            unsafe {
+                #[cfg(unix)]
+                let sock = {
+                    use std::os::unix::io::{AsRawFd, FromRawFd};
+                    tokio::net::TcpSocket::from_raw_fd(self.stream.as_raw_fd())
+                };
+                #[cfg(windows)]
+                let sock = {
+                    use std::os::windows::io::{AsRawSocket, FromRawSocket};
+                    tokio::net::TcpSocket::from_raw_socket(self.stream.as_raw_socket())
+                };
+
+                sock.set_recv_buffer_size(socket_buffers)
+                    .unwrap_or_else(|err| warn!("set_recv_buffer_size(), error: {}", err));
+                sock.set_send_buffer_size(socket_buffers)
+                    .unwrap_or_else(|err| warn!("set_send_buffer_size(), error: {}", err));
+
+                std::mem::forget(sock);
+            }
         }
         Ok(())
     }

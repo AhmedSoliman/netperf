@@ -18,7 +18,7 @@ use tokio::time::timeout;
 pub async fn run_server(opts: Opts) -> Result<()> {
     // We use IPv6Addr::UNSPECIFIED here to listen on all
     // IPv4 and IPv6 local interfaces. (dual stack)
-    let mut listener = TcpListener::bind((Ipv6Addr::UNSPECIFIED, opts.common_opts.port)).await?;
+    let listener = TcpListener::bind((Ipv6Addr::UNSPECIFIED, opts.common_opts.port)).await?;
     let port = opts.common_opts.port;
     ui::print_server_banner(port);
     // Handles a single test instance
@@ -42,7 +42,7 @@ pub async fn run_server(opts: Opts) -> Result<()> {
                     if client_cookie == *cookie {
                         // Create the stream.
                         server_send_message(&mut inbound, ServerMessage::Welcome).await?;
-                        let mut controller = controller_channel.clone().unwrap();
+                        let controller = controller_channel.clone().unwrap();
                         controller.try_send(ControllerMessage::CreateStream(inbound))?;
                     } else {
                         let _ = server_send_error(
