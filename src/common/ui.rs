@@ -1,5 +1,6 @@
 use crate::common::control::TestResults;
 use crate::common::data::Direction;
+use colored::Colorize;
 
 // Bytes
 const KBYTES: usize = 1024;
@@ -18,7 +19,7 @@ pub fn print_header() {
 }
 pub fn print_server_banner(port: u16) {
     println!("--------------------------------------");
-    println!("Listening on port {}", port);
+    println!("{} {}", "Listening on port".cyan(), port);
     println!("--------------------------------------");
 }
 
@@ -74,7 +75,11 @@ pub fn print_stats(
         end_point as f64 / 1000f64,
         humanize_bytes(bytes_transferred),
         humanize_bitrate(bytes_transferred, duration_millis),
-        if sender { "sender" } else { "receiver" },
+        if sender {
+            "sender".yellow()
+        } else {
+            "receiver".magenta()
+        },
     );
 }
 
@@ -161,5 +166,11 @@ pub fn print_summary(
 }
 
 fn print_summary_header() {
-    println!("ID   Interval          Transfer      Bitrate");
+    println!(
+        "{}   {}          {}      {}",
+        "ID".bold(),
+        "Interval".bold(),
+        "Transfer".bold(),
+        "Bitrate".bold()
+    );
 }
