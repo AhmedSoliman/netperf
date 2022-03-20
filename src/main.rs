@@ -1,11 +1,11 @@
 use anyhow::Result;
+use clap::Parser;
 use log::info;
 use netperf::common::opts::Opts;
-use structopt::StructOpt;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-    let opts = Opts::from_args();
+    let opts = Opts::parse();
     // Setting the log-level for (all modules) from the verbosity argument.
     // -v WARN, -vv INFO, -vvv DEBUG, etc.
     let log_level = opts.verbose.log_level().unwrap_or(log::Level::Error);
