@@ -5,9 +5,6 @@ pub struct ServerOpts {
     /// Run in server mode
     #[clap(short, long, group = "server_or_client")]
     pub server: bool,
-    /// Run in server mode
-    #[clap(short = '1', long, group = "server_or_client")]
-    pub one_off: bool,
 }
 
 #[derive(Debug, Parser)]

@@ -18,7 +18,7 @@ pub async fn run_client(opts: Opts) -> Result<(), anyhow::Error> {
     print!("Connecting to ({}:{})...", client_host, port);
     let mut control_socket = TcpStream::connect(address.clone()).await?;
     println!("{}", " Connected!".green());
-    let cookie = uuid::Uuid::new_v4().to_hyphenated().to_string();
+    let cookie = uuid::Uuid::new_v4().hyphenated().to_string();
     client_send_message(
         &mut control_socket,
         ClientMessage::Hello {
