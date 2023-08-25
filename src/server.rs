@@ -2,7 +2,7 @@ use crate::common::consts;
 use crate::common::control::*;
 use crate::common::data::{Role, TestParameters};
 use crate::common::net_utils::*;
-use crate::common::opts::Opts;
+use crate::common::opts::CommonOpts;
 use crate::common::perf_test::PerfTest;
 use crate::common::*;
 use crate::controller::{ControllerMessage, TestController};
@@ -15,11 +15,11 @@ use tokio::sync::mpsc::Sender;
 use tokio::sync::Mutex;
 use tokio::time::timeout;
 
-pub async fn run_server(opts: Opts) -> Result<()> {
+pub async fn run_server(common_opts: &CommonOpts) -> Result<()> {
     // We use IPv6Addr::UNSPECIFIED here to listen on all
     // IPv4 and IPv6 local interfaces. (dual stack)
-    let listener = TcpListener::bind((Ipv6Addr::UNSPECIFIED, opts.common_opts.port)).await?;
-    let port = opts.common_opts.port;
+    let listener = TcpListener::bind((Ipv6Addr::UNSPECIFIED, common_opts.port)).await?;
+    let port = common_opts.port;
     ui::print_server_banner(port);
     // Handles a single test instance
     //

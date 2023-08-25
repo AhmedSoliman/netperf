@@ -2,7 +2,7 @@ use crate::common::consts::DEFAULT_BLOCK_SIZE;
 use crate::common::control::{ClientMessage, ServerMessage};
 use crate::common::data::{Role, TestParameters};
 use crate::common::net_utils::*;
-use crate::common::opts::Opts;
+use crate::common::opts::{ClientOpts, CommonOpts};
 use crate::common::perf_test::PerfTest;
 use crate::controller::TestController;
 use anyhow::Result;
@@ -10,10 +10,13 @@ use colored::Colorize;
 use log::debug;
 use tokio::net::TcpStream;
 
-pub async fn run_client(opts: Opts) -> Result<(), anyhow::Error> {
+pub async fn run_client(
+    common_opts: &CommonOpts,
+    client_opts: &ClientOpts,
+) -> Result<(), anyhow::Error> {
     // We are sure this is set at this point.
-    let client_host = opts.client_opts.client.as_ref().unwrap();
-    let port = opts.common_opts.port;
+    let client_host = client_opts.client.as_ref().unwrap();
+    let port = common_opts.port;
     let address = format!("{}:{}", client_host, port);
     print!("Connecting to ({}:{})...", client_host, port);
     let mut control_socket = TcpStream::connect(address.clone()).await?;
@@ -34,7 +37,7 @@ pub async fn run_client(opts: Opts) -> Result<(), anyhow::Error> {
 
     // Sending the header of the test paramters in JSON
     // The format is size(4 bytes)+JSON
-    let params = TestParameters::from_opts(&opts, DEFAULT_BLOCK_SIZE);
+    let params = TestParameters::from_opts(client_opts, DEFAULT_BLOCK_SIZE);
     client_send_message(
         &mut control_socket,
         ClientMessage::SendParameters(params.clone()),

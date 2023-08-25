@@ -1,13 +1,13 @@
-use clap::{ArgGroup, Parser};
+use cling::prelude::*;
 
-#[derive(Debug, Parser)]
+#[derive(Debug, CliParam, Clone, Parser)]
 pub struct ServerOpts {
     /// Run in server mode
     #[clap(short, long, group = "server_or_client")]
     pub server: bool,
 }
 
-#[derive(Debug, Parser)]
+#[derive(Debug, CliParam, Clone, Parser)]
 pub struct ClientOpts {
     /// Run in client mode, connect to <host>
     #[clap(short, long, group = "server_or_client")]
@@ -35,7 +35,7 @@ pub struct ClientOpts {
     pub no_delay: bool,
 }
 
-#[derive(Debug, Parser)]
+#[derive(Debug, CliParam, Clone, Parser)]
 pub struct CommonOpts {
     /// Server port to listen on/connect to
     #[clap(short, long, default_value = "7559")]
@@ -45,13 +45,14 @@ pub struct CommonOpts {
     pub interval: u16,
 }
 
-#[derive(Debug, Parser)]
+#[derive(CliRunnable, Debug, Parser, Clone)]
 #[clap(
     name = "netperf", 
     groups = [
     ArgGroup::new("server_or_client").required(true),
     ArgGroup::new("direction")])
 ]
+#[cling(run = "crate::run")]
 /// A network performance measurement tool
 pub struct Opts {
     #[clap(flatten)]
