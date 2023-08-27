@@ -62,5 +62,6 @@ pub struct Opts {
     #[clap(flatten)]
     pub common_opts: CommonOpts,
     #[clap(flatten)]
+    #[cling(collect)]
     pub verbose: clap_verbosity_flag::Verbosity,
 }

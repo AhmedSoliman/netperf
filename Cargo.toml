@@ -1,6 +1,6 @@
 [package]
 name = "netperf"
-version = "0.2.5"
+version = "0.2.6"
 description = "A network performance measurement tool"
 authors = ["Ahmed Farghal <me@asoli.dev>"]
 edition = "2021"
@@ -23,7 +23,7 @@ futures = "0.3.26"
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.91"
 thiserror = "1.0.38"
-cling = { version = "0.0.0-alpha.5" }
+cling = { version = "0.0.1-alpha.1" }
 tokio = { version = "1.25.0", features = [
   "rt",
   "rt-multi-thread",
