@@ -6,8 +6,9 @@ pub mod controller;
 pub mod server;
 
 use crate::common::opts::{ClientOpts, CommonOpts, ServerOpts};
-use cling::Collected;
+use cling::prelude::*;
 
+#[cling_handler]
 async fn run(
     Collected(verbosity): Collected<clap_verbosity_flag::Verbosity>,
     common_opts: &CommonOpts,

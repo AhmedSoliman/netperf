@@ -1,13 +1,13 @@
 use cling::prelude::*;
 
-#[derive(Debug, CliParam, Clone, Parser)]
+#[derive(Debug, Collect, Clone, Parser)]
 pub struct ServerOpts {
     /// Run in server mode
     #[clap(short, long, group = "server_or_client")]
     pub server: bool,
 }
 
-#[derive(Debug, CliParam, Clone, Parser)]
+#[derive(Debug, Collect, Clone, Parser)]
 pub struct ClientOpts {
     /// Run in client mode, connect to <host>
     #[clap(short, long, group = "server_or_client")]
@@ -35,7 +35,7 @@ pub struct ClientOpts {
     pub no_delay: bool,
 }
 
-#[derive(Debug, CliParam, Clone, Parser)]
+#[derive(Debug, Collect, Clone, Parser)]
 pub struct CommonOpts {
     /// Server port to listen on/connect to
     #[clap(short, long, default_value = "7559")]
@@ -45,7 +45,7 @@ pub struct CommonOpts {
     pub interval: u16,
 }
 
-#[derive(CliRunnable, Debug, Parser, Clone)]
+#[derive(Run, Debug, Parser, Clone)]
 #[clap(
     name = "netperf", 
     groups = [
